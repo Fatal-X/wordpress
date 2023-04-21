@@ -1,0 +1,44 @@
+#!/bin/bash
+set -e
+
+SCRIPT_PATH=$(dirname -- "$0")
+VAULT_FILE=./${SCRIPT_PATH}/../vault
+ENCRYPT_KEY=$(cat $VAULT_FILE)
+ENCRYPT_DIR=./${SCRIPT_PATH}/../.encrypted
+
+PS3=$'What environment parameters you would like to decrypt?'
+options=("local" "dev" "Quit")
+
+if [ ! -f $(pwd)/vault ]; then
+    echo "ERROR! File ./vault is not found"
+    echo "Ask your Project Manager for vault key (or see it in the project credentials) and put it to ./vault"
+    exit 1
+fi
+
+decrypt-env () {
+    echo "Decrypting .env-file"
+    openssl enc -d -aes-256-cbc -k "$ENCRYPT_KEY" -in $ENCRYPT_DIR/$opt/.env.enc -out .env -pbkdf2 -iter 100000
+}
+
+if [[ $# -eq 0 ]] ;
+then
+    PS3=$'What environment parameters you would like to decrypt?'
+    options=("local" "dev" "Quit")
+    select opt in "${options[@]}"
+do
+    case $opt in
+       local|dev)
+            echo "You choose $REPLY which is $opt"
+            decrypt-env
+            break
+            ;;
+        "Quit")
+            break
+            ;;
+        *) echo "invalid option $REPLY";;
+    esac
+done
+else opt=$1
+  echo "You choose to decrypt $opt parameters"
+  decrypt-env
+fi

@@ -1,0 +1,72 @@
+#!/bin/bash
+set -e
+HASH="$(openssl passwd -apr1 $HTTP_PASSWORD)"
+echo "$APP_NAME:$HASH" > $(pwd)/nginx/configs/.htpasswd
+rm -rf ./nginx/configs/conf.d/*
+mkdir -p ./nginx/configs/conf.d/
+
+if [[  "$DOCKER_ENV" = dev || "$DOCKER_ENV" = staging  ]] 
+    then
+			basic_auth='auth_basic "Restricted";
+      auth_basic_user_file /etc/nginx/.htpasswd;'
+fi
+
+cat <<EOF > ./nginx/configs/conf.d/server.conf
+upstream landing {
+    server wp:9000 max_fails=1 fail_timeout=60;
+}
+
+server {
+		listen 80;
+		return 301 https://\$host\$request_uri;
+}
+server {
+		listen 443 ssl;
+		server_name ${SERVER_NAME};
+		ssl_certificate /etc/nginx/ssl/server.crt;
+		ssl_certificate_key /etc/nginx/ssl/server.key;
+
+    index index.php index.html index.htm;
+
+    root /var/www/html;
+
+    server_tokens off;
+
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy "no-referrer-when-downgrade" always;
+    add_header Content-Security-Policy "default-src * data: 'unsafe-eval' 'unsafe-inline'" always;
+
+    location / {
+        try_files \$uri \$uri/ /index.php\$is_args\$args;
+    }
+
+    location ~ \.php$ {
+        try_files \$uri =404;
+        fastcgi_split_path_info ^(.+\.php)(/.+)$;
+        fastcgi_pass wp:9000;
+        fastcgi_index index.php;
+        include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
+        fastcgi_param PATH_INFO \$fastcgi_path_info;
+    }
+
+    location ~ /\.ht {
+        deny all;
+    }
+    
+    location = /favicon.ico { 
+        log_not_found off; access_log off; 
+    }
+    location = /robots.txt { 
+        log_not_found off; access_log off; allow all; 
+    }
+    location ~* \.(css|gif|ico|jpeg|jpg|js|png)$ {
+        expires max;
+        log_not_found off;
+    }
+  }
+
+EOF
+
