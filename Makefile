@@ -4,13 +4,13 @@ export $(shell sed 's/=.*//' .env)
 ENCRYPT_KEY = $(shell cat ./vault)
 ENCRYPT_DIR = .encrypted
 
-RUN = docker-compose -f docker-compose-${DOCKER_ENV}.yml run --rm
-START = docker-compose -f docker-compose-${DOCKER_ENV}.yml up -d
-STOP = docker-compose -f docker-compose-${DOCKER_ENV}.yml stop
-DOWN = docker-compose -f docker-compose-${DOCKER_ENV}.yml down
-LOGS = docker-compose -f docker-compose-${DOCKER_ENV}.yml logs
-EXEC = docker-compose -f docker-compose-${DOCKER_ENV}.yml exec
-STATUS = docker-compose -f docker-compose-${DOCKER_ENV}.yml ps
+RUN = sudo docker-compose -f docker-compose-${DOCKER_ENV}.yml run --rm
+START = sudo docker-compose -f docker-compose-${DOCKER_ENV}.yml up -d
+STOP = sudo docker-compose -f docker-compose-${DOCKER_ENV}.yml stop
+DOWN = sudo docker-compose -f docker-compose-${DOCKER_ENV}.yml down
+LOGS = sudo docker-compose -f docker-compose-${DOCKER_ENV}.yml logs
+EXEC = sudo docker-compose -f docker-compose-${DOCKER_ENV}.yml exec
+STATUS = sudo docker-compose -f docker-compose-${DOCKER_ENV}.yml ps
 
 docker-env: ssl nginx-config up
 
